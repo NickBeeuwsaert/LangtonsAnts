@@ -82,19 +82,35 @@ int main(int argc, char*argv[]) {
     Ant *antb = Ant_new(board, BOARD_WIDTH / 4 + BOARD_WIDTH / 2, BOARD_HEIGHT / 2, SOUTH);*/
     short board_width, board_height;
     short tile_size;
-    FILE *input = fopen("struct.ant", "r");
-    unpack(input, "<HHH", &board_width, &board_height, &tile_size);
-    Board *board = Board_new(board_width, board_height);
     unsigned int num_ants;
-    unpack(input, "<I", &num_ants);
-    Ant **ants = malloc(sizeof(Ant*) * num_ants);
-    for(int i = 0; i < num_ants; i++) {
-        unsigned short x, y;
-        char dir;
-        unpack(input, "<HHb", &x, &y, &dir);
-        ants[i] = Ant_new(board, x, y, dir);
+    Board *board;
+    Ant **ants;
+    FILE *input = NULL;
+    if(argc >= 2) {
+        input = fopen(argv[1], "r");
     }
-    fclose(input);
+    if(input){
+        unpack(input, "<HHH", &board_width, &board_height, &tile_size);
+        board = Board_new(board_width, board_height);
+        unpack(input, "<I", &num_ants);
+        ants = malloc(sizeof(Ant*) * num_ants);
+        for(int i = 0; i < num_ants; i++) {
+            unsigned short x, y;
+            char dir;
+            unpack(input, "<HHb", &x, &y, &dir);
+            ants[i] = Ant_new(board, x, y, dir);
+        }
+        fclose(input);
+    } else {
+        num_ants = 2;
+        board_width = 17;
+        board_height = 17;
+        tile_size = 32;
+        board = Board_new(board_width, board_height);
+        ants = malloc(sizeof(Ant) * num_ants);
+        ants[0] = Ant_new(board, board_width/4, board_height/2, NORTH);
+        ants[1] = Ant_new(board, board_width/4 + board_width/2, board_height/2, SOUTH);
+    }
     SDL_CreateWindowAndRenderer(board_width * tile_size, board_height * tile_size, SDL_WINDOW_OPENGL, &window, &renderer);
     
     int running = 1;

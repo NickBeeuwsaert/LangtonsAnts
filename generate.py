@@ -8,11 +8,12 @@ parser.add_argument('--width', '-W', type=int, default=256)
 parser.add_argument('--height', '-H', type=int, default=256)
 parser.add_argument('--tile-size', type=int, default=2)
 parser.add_argument('--num-ants', '-n', type=int, default=256)
+parser.add_argument('--output', '-o', required=True)
 
 options = parser.parse_args()
 
 w, h = options.width, options.height
-with open("struct.ant", "w+") as output:
+with open(options.output, "w+") as output:
     #header
     output.write(struct.pack("<HHH", w, h, options.tile_size))
     num_ants = options.num_ants
