@@ -1,5 +1,7 @@
 env = Environment()
 
-env.ParseConfig('sdl2-config --libs --cflags');
+env.ParseConfig('sdl2-config --libs --cflags')
 
-env.Program('main', 'main.c');
+Pack = env.Library('pack', 'Pack.c')
+env.Append(LIBS=[Pack])
+env.Program('main', 'main.c')

@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include "Pack.h"
 
 typedef struct {
     char *board;
@@ -71,48 +72,61 @@ void Ant_step(Ant *a) {
 void Ant_free(Ant *a) {
     free(a);
 }
-#define BOARD_WIDTH 16
-#define BOARD_HEIGHT 16
-#define TILE_SIZE 32
 
 int main(int argc, char*argv[]) {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Event evt;
-    SDL_CreateWindowAndRenderer(BOARD_WIDTH * TILE_SIZE, BOARD_HEIGHT * TILE_SIZE, SDL_WINDOW_OPENGL, &window, &renderer);
-    Board *board = Board_new(BOARD_WIDTH, BOARD_HEIGHT);
-    Ant *ant = Ant_new(board, BOARD_WIDTH / 2, BOARD_HEIGHT / 2, NORTH);
+    /*Board *board = Board_new(BOARD_WIDTH, BOARD_HEIGHT);
+    Ant *anta = Ant_new(board, BOARD_WIDTH / 4, BOARD_HEIGHT / 2, NORTH);
+    Ant *antb = Ant_new(board, BOARD_WIDTH / 4 + BOARD_WIDTH / 2, BOARD_HEIGHT / 2, SOUTH);*/
+    short board_width, board_height;
+    short tile_size;
+    FILE *input = fopen("struct.ant", "r");
+    unpack(input, "<HHH", &board_width, &board_height, &tile_size);
+    Board *board = Board_new(board_width, board_height);
+    unsigned int num_ants;
+    unpack(input, "<I", &num_ants);
+    Ant **ants = malloc(sizeof(Ant*) * num_ants);
+    for(int i = 0; i < num_ants; i++) {
+        unsigned short x, y;
+        char dir;
+        unpack(input, "<HHb", &x, &y, &dir);
+        ants[i] = Ant_new(board, x, y, dir);
+    }
+    fclose(input);
+    SDL_CreateWindowAndRenderer(board_width * tile_size, board_height * tile_size, SDL_WINDOW_OPENGL, &window, &renderer);
+    
     int running = 1;
     int start = SDL_GetTicks();
     while(running) {
-        if(SDL_GetTicks() - start > 250) {
+        if(SDL_GetTicks() - start > 50) {
             start = SDL_GetTicks();
-            Ant_step(ant);
-            SDL_Delay(500);
+            for(int i = 0; i < num_ants; i++) {
+                Ant_step(ants[i]);
+            }
         }
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         for(int x = 0; x < board->width; x++) {
             for(int y = 0; y < board->height; y++) {
-                SDL_Rect tile = {x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE};
+                SDL_Rect tile = {x*tile_size, y*tile_size, tile_size, tile_size};
                 if(board->board[(y*board->width)+x]) {
                     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
                     SDL_RenderFillRect(renderer, &tile);
                 }
-                SDL_SetRenderDrawColor(renderer, 255,255,255,255);
-                SDL_RenderDrawRect(renderer, &tile);
             }
         }
-        //Draw the ant...
-        SDL_Rect antRect = {
-            ant->x * TILE_SIZE + TILE_SIZE / 4,
-            ant->y * TILE_SIZE + TILE_SIZE / 4,
-            TILE_SIZE / 2,
-            TILE_SIZE / 2
-        };
+        /*
+        SDL_Rect antRect;
+        antRect.x = anta->x * TILE_SIZE + TILE_SIZE / 4;
+        antRect.y = anta->y * TILE_SIZE + TILE_SIZE / 4;
+        antRect.w = TILE_SIZE / 2;
+        antRect.h = TILE_SIZE / 2;
 
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         SDL_RenderFillRect(renderer, &antRect);
+        */
 
       
         SDL_RenderPresent(renderer);
@@ -124,7 +138,11 @@ int main(int argc, char*argv[]) {
             }
         }
     }
-    Ant_free(ant);
+    for(int i = 0; i < num_ants; i++) {
+        Ant_free(ants[i]);
+    }
+    free(ants);
+    //Ant_free(anta);
     Board_free(board);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
